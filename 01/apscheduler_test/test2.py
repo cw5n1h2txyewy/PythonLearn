@@ -2,13 +2,14 @@
 
 import time
 from datetime import datetime, timedelta
-from apscheduler.jobstores.memory import MemoryJobStore
-from apscheduler.executors.pool import ThreadPoolExecutor, ProcessPoolExecutor
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.triggers.interval import IntervalTrigger
-from apscheduler.triggers.date import DateTrigger
-from apscheduler.triggers.cron import CronTrigger
+from zoneinfo import ZoneInfo
 
+from apscheduler.executors.pool import ProcessPoolExecutor, ThreadPoolExecutor
+from apscheduler.jobstores.memory import MemoryJobStore
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.date import DateTrigger
+from apscheduler.triggers.interval import IntervalTrigger
 
 # 一个名为 default 的 MemoryJobStore
 job_stores = {"default": MemoryJobStore()}
@@ -21,14 +22,15 @@ executors = {"default": ThreadPoolExecutor(20), "processpool": ProcessPoolExecut
 job_defaults = {"coalesce": False, "max_instances": 2, "misfire_grace_time": 60}
 
 
-# 非阻塞的scheduler
+# BackgroundScheduler：start() 立即返回，调度器在后台线程运行，适合嵌入 Web 服务、GUI 或还有其他主循环的程序
+# 默认都会通过线程池并发执行任务
 scheduler = BackgroundScheduler(
     job_stores=job_stores, executors=executors, job_defaults=job_defaults
 )
 
 
 def get_time_str():
-    return f"{datetime.now():%Y-%m-%d %H:%M:%S}"
+    return f"{datetime.now(ZoneInfo('Asia/Shanghai')):%Y-%m-%d %H:%M:%S}"
 
 
 def job1_func(*args, **kwargs):
@@ -65,7 +67,7 @@ job2 = scheduler.add_job(job2_func, IntervalTrigger(seconds=4), id="job2")
 # 5秒后执行
 job3 = scheduler.add_job(
     job3_func,
-    DateTrigger(run_date=datetime.now() + timedelta(seconds=5)),
+    DateTrigger(run_date=datetime.now(ZoneInfo('Asia/Shanghai')) + timedelta(seconds=5)),
     args=["aaa"],
     kwargs={"arg2": "bbb"},
     id="job3",

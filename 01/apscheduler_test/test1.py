@@ -1,18 +1,23 @@
 # 基础使用
 
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+
+from apscheduler.executors.pool import ProcessPoolExecutor, ThreadPoolExecutor
 from apscheduler.schedulers.blocking import BlockingScheduler
-from apscheduler.triggers.interval import IntervalTrigger
-from apscheduler.triggers.date import DateTrigger
 from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.date import DateTrigger
+from apscheduler.triggers.interval import IntervalTrigger
 
+executors = {"default": ThreadPoolExecutor(20), "processpool": ProcessPoolExecutor(5)}
 
-# 阻塞型scheduler, 同一时刻只能有一个job运行
-scheduler = BlockingScheduler()
+# BlockingScheduler：start() 会阻塞当前主线程，适合调度器就是程序主体的命令行服务。
+# 默认都会通过线程池并发执行任务
+scheduler = BlockingScheduler(executors=executors)
 
 
 def get_time_str():
-    return f"{datetime.now():%Y-%m-%d %H:%M:%S}"
+    return f"{datetime.now(ZoneInfo('Asia/Shanghai')):%Y-%m-%d %H:%M:%S}"
 
 
 def job1_func(*args, **kwargs):
@@ -49,7 +54,7 @@ job2 = scheduler.add_job(job2_func, IntervalTrigger(seconds=4), id="job2")
 # 5秒后执行
 job3 = scheduler.add_job(
     job3_func,
-    DateTrigger(run_date=datetime.now() + timedelta(seconds=5)),
+    DateTrigger(run_date=datetime.now(ZoneInfo('Asia/Shanghai')) + timedelta(seconds=5)),
     args=["aaa"],
     kwargs={"arg2": "bbb"},
     id="job3",
